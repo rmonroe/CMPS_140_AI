@@ -7,7 +7,7 @@
 # For more info, see http://inst.eecs.berkeley.edu/~cs188/sp09/pacman.html
 
 """
-In search.py, you will implement generic search algorithms which are called 
+In search.py, you will implement generic search algorithms which are called
 by Pacman agents (in searchAgents.py).
 """
 
@@ -17,13 +17,13 @@ class SearchProblem:
   """
   This class outlines the structure of a search problem, but doesn't implement
   any of the methods (in object-oriented terminology: an abstract class).
-  
+
   You do not need to change anything in this class, ever.
   """
-  
+
   def startingState(self):
     """
-    Returns the start state for the search problem 
+    Returns the start state for the search problem
     """
     util.raiseNotDefined()
 
@@ -38,10 +38,10 @@ class SearchProblem:
   def successorStates(self, state): #successorStates -> successorsOf
     """
     state: Search state
-     For a given state, this should return a list of triples, 
-     (successor, action, stepCost), where 'successor' is a 
+     For a given state, this should return a list of triples,
+     (successor, action, stepCost), where 'successor' is a
      successor to the current state, 'action' is the action
-     required to get there, and 'stepCost' is the incremental 
+     required to get there, and 'stepCost' is the incremental
      cost of expanding to that successor
     """
     util.raiseNotDefined()
@@ -49,12 +49,12 @@ class SearchProblem:
   def actionsCost(self, actions): #actionsCost -> actionsCost
     """
       actions: A list of actions to take
- 
+
      This method returns the total cost of a particular sequence of actions.  The sequence must
      be composed of legal moves
     """
     util.raiseNotDefined()
-           
+
 
 def tinyMazeSearch(problem):
   """
@@ -69,24 +69,95 @@ def tinyMazeSearch(problem):
 def depthFirstSearch(problem):
   """
   Search the deepest nodes in the search tree first [p 85].
-  
+
   Your search algorithm needs to return a list of actions that reaches
   the goal.  Make sure to implement a graph search algorithm [Fig. 3.7].
-  
+
   To get started, you might want to try some of these simple commands to
   understand the search problem that is being passed in:
-  
+
   print "Start:", problem.startingState()
   print "Is the start a goal?", problem.isGoal(problem.startingState())
   print "Start's successors:", problem.successorStates(problem.startingState())
   """
-  util.raiseNotDefined()
+  print "Start:", problem.startingState()
+  print "Is the start a goal?", problem.isGoal(problem.startingState())
+  print "Start's successors:", problem.successorStates(problem.startingState())
+
+  # hold the fringe nodes in a stack
+  fringe = util.Stack()
+  # keep track of the explored nodes, to use graph search
+  explored = []
+  # get the starting location and path
+  start = (problem.startingState(), [])
+  # begin the stack with the start pos
+  fringe.push(start)
+
+  # loop until the fringe is empty
+  while not fringe.isEmpty():
+    #pop the first test state off the stack
+    state = fringe.pop()
+    #assign values for the locationa and the path to that node
+    myLocation = state[0]
+    myPath = state[1]
+
+    #check that the location has not already been explored
+    if(myLocation not in explored):
+      # add the new location to explored
+      explored.append(myLocation)
+      # check if we have reached our goal
+      if(problem.isGoal(myLocation)):
+        return myPath
+      # find the successors to this state
+      successors = problem.successorStates(myLocation)
+      # loop through the successors and push them onto the stack
+      for i in successors:
+        # but only if they havent been explored yet
+        if i[0] not in explored:
+          fringe.push((i[0], myPath + [i[1]]))
+  return []
 
 
 def breadthFirstSearch(problem):
   "Search the shallowest nodes in the search tree first. [p 81]"
-  util.raiseNotDefined()
-      
+  print "Start:", problem.startingState()
+  print "Is the start a goal?", problem.isGoal(problem.startingState())
+  print "Start's successors:", problem.successorStates(problem.startingState())
+
+  # same implementation as DFS but with a queue for FIFO
+  # hold the fringe nodes in a queue
+  fringe = util.Queue()
+  # keep track of the explored nodes, to use graph search
+  explored = []
+  # get the starting location and path
+  start = (problem.startingState(), [])
+  # begin the stack with the start pos
+  fringe.push(start)
+
+  # loop until the fringe is empty
+  while not fringe.isEmpty():
+    #pop the first test state off the stack
+    state = fringe.pop()
+    #assign values for the locationa and the path to that node
+    myLocation = state[0]
+    myPath = state[1]
+
+    #check that the location has not already been explored
+    if(myLocation not in explored):
+      # add the new location to explored
+      explored.append(myLocation)
+      # check if we have reached our goal
+      if(problem.isGoal(myLocation)):
+        return myPath
+      # find the successors to this state
+      successors = problem.successorStates(myLocation)
+      # loop through the successors and push them onto the stack
+      for i in successors:
+        # but only if they havent been explored yet
+        if i[0] not in explored:
+          fringe.push((i[0], myPath + [i[1]]))
+  return []
+
 def uniformCostSearch(problem):
   "Search the node of least total cost first. "
   util.raiseNotDefined()
@@ -101,9 +172,9 @@ def nullHeuristic(state, problem=None):
 def aStarSearch(problem, heuristic=nullHeuristic):
   "Search the node that has the lowest combined cost and heuristic first."
   util.raiseNotDefined()
-    
 
-  
+
+
 # Abbreviations
 bfs = breadthFirstSearch
 dfs = depthFirstSearch
