@@ -378,8 +378,18 @@ def cornersHeuristic(state, problem):
   walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
   "*** Your Code Here ***"
-
-  return 0 # Default to trivial solution
+  # distance of the corners
+  myCornerCost = [0,0,0,0]
+  # run through the 4 corners
+  for i in range(4):
+      # only run the heuristic if the corner has not been visited
+      if not state[1][i]:
+          # get the manhattanDistance from the state to a corner
+          myCornerCost[i] = util.manhattanDistance(state[0],corners[i])
+  # sort the list of corners
+  myCornerCost.sort()
+  # add the cost of the farthest corner to make the cost decision
+  return myCornerCost[3]
 
 class AStarCornersAgent(SearchAgent):
   "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
@@ -470,7 +480,24 @@ def foodHeuristic(state, problem):
   """
   position, foodGrid = state
   "*** Your Code Here ***"
-  return 0
+  # get the number of food left in the maze
+  foodLeft = len(foodGrid.asList())
+  # if there is no food left then we return 0
+  if foodLeft == 0:
+      return 0
+  # vars for the cost of the move and the farthest food
+  # we keep track of the farthest food, because it will be the hightest cost to that path
+  cost = 0
+  farFood = 0
+  # loop through the grid
+  for i in foodGrid.asList():
+      # calc the manhattanDistance of the food
+      cost = util.manhattanDistance(state[0],i)
+      # is this food the farthest, if so keep track of it as the farthest
+      if cost > farFood:
+          farFood = cost
+  # return the cost of the farthest food
+  return farFood
 
 def numFoodHeuristic(state, problem):
   return state[1].count()
