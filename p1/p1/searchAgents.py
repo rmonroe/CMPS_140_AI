@@ -326,10 +326,12 @@ class CornersProblem(search.SearchProblem):
       nextx, nexty = int(x + dx), int(y + dy)
       # but now if we know its not a wall we have to check
       if not self.walls[nextx][nexty]:
+          # get the current state of the visited corners
           tempCorners = state[1][:]
+          # check if the location is a corner, if not dont worry about it
           if (nextx, nexty) in self.corners:
               # this tracks the visits of the corners
-              # if the next pso is a corner, we will visit it
+              # if the next pos is a corner, we will visit it
               if (nextx, nexty) == self.corners[0]:
                   # once we have check off the corner
                   tempCorners[0] = True
@@ -378,18 +380,23 @@ def cornersHeuristic(state, problem):
   walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
   "*** Your Code Here ***"
-  # distance of the corners
-  myCornerCost = [0,0,0,0]
+  # have all the corners been visted yet
+  if all(state[1]):
+      # if so the heuristic is completed and cost 0
+      return 0
+
+  farCorner = 0
+  cost = 0
   # run through the 4 corners
   for i in range(4):
       # only run the heuristic if the corner has not been visited
       if not state[1][i]:
           # get the manhattanDistance from the state to a corner
-          myCornerCost[i] = util.manhattanDistance(state[0],corners[i])
-  # sort the list of corners
-  myCornerCost.sort()
-  # add the cost of the farthest corner to make the cost decision
-  return myCornerCost[3]
+          cost = util.manhattanDistance(state[0],corners[i])
+          # is this cost more than the current farthest corner
+          if cost > farCorner:
+              farCorner = cost
+  return farCorner
 
 class AStarCornersAgent(SearchAgent):
   "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
@@ -496,7 +503,7 @@ def foodHeuristic(state, problem):
       # is this food the farthest, if so keep track of it as the farthest
       if cost > farFood:
           farFood = cost
-  # return the cost of the farthest food
+  # return the cost of the farthest food. (The farthest food is the true cost of the path)
   return farFood
 
 def numFoodHeuristic(state, problem):
@@ -530,7 +537,8 @@ class ClosestDotSearchAgent(SearchAgent):
     problem = AnyFoodSearchProblem(gameState)
 
     "*** Your Code Here ***"
-    util.raiseNotDefined()
+    # tried all the searches and UCS expands the least amount of nodes and is fast
+    return search.uniformCostSearch(problem)
 
 
 class AnyFoodSearchProblem(PositionSearchProblem):
@@ -567,7 +575,11 @@ class AnyFoodSearchProblem(PositionSearchProblem):
     x,y = state
 
     "*** Your Code Here ***"
-    util.raiseNotDefined()
+    # check if the state is in the food, if so we want to go there
+    if state in self.food.asList():
+        return True
+    else:
+        return False
 
 ##################
 # Mini-contest 1 #

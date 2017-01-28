@@ -80,9 +80,6 @@ def depthFirstSearch(problem):
   print "Is the start a goal?", problem.isGoal(problem.startingState())
   print "Start's successors:", problem.successorStates(problem.startingState())
   """
-  print "Start:", problem.startingState()
-  print "Is the start a goal?", problem.isGoal(problem.startingState())
-  print "Start's successors:", problem.successorStates(problem.startingState())
 
   # hold the fringe nodes in a stack
   fringe = util.Stack()
@@ -97,7 +94,7 @@ def depthFirstSearch(problem):
   while not fringe.isEmpty():
     #pop the first test state off the stack
     state = fringe.pop()
-    #assign values for the locationa and the path to that node
+    #assign values for the location and the path to that node
     myLocation = state[0]
     myPath = state[1]
 
@@ -120,9 +117,6 @@ def depthFirstSearch(problem):
 
 def breadthFirstSearch(problem):
   "Search the shallowest nodes in the search tree first. [p 81]"
-  print "Start:", problem.startingState()
-  print "Is the start a goal?", problem.isGoal(problem.startingState())
-  print "Start's successors:", problem.successorStates(problem.startingState())
 
   # same implementation as DFS but with a queue for FIFO
   # hold the fringe nodes in a queue
@@ -160,16 +154,13 @@ def breadthFirstSearch(problem):
 
 def uniformCostSearch(problem):
   "Search the node of least total cost first. "
-  print "Start:", problem.startingState()
-  print "Is the start a goal?", problem.isGoal(problem.startingState())
-  print "Start's successors:", problem.successorStates(problem.startingState())
 
   # same implementation as DFS but with a priorityqueue to keep track of cost
   # hold the fringe nodes in a PriorityQueue
   fringe = util.PriorityQueue()
   # keep track of the explored nodes, to use graph search
   explored = []
-  # get the starting location and path
+  # get the starting location, path, and cost
   start = (problem.startingState(), [], [])
   # begin the stack with the start pos
   fringe.push(start, 0)
@@ -178,7 +169,7 @@ def uniformCostSearch(problem):
   while not fringe.isEmpty():
     #pop the first test state off the stack
     state = fringe.pop()
-    #assign values for the locationa and the path to that node
+    #assign values for the location, path,and cost
     myLocation = state[0]
     myPath = state[1]
     myCost = state[2]
@@ -211,10 +202,6 @@ def nullHeuristic(state, problem=None):
 
 def aStarSearch(problem, heuristic=nullHeuristic):
   "Search the node that has the lowest combined cost and heuristic first."
-  print "Start:", problem.startingState()
-  print "Is the start a goal?", problem.isGoal(problem.startingState())
-  print "Start's successors:", problem.successorStates(problem.startingState())
-
   # same implementation as UCS using a PriorityQueue, but additional
   # cost is taken in
   # hold the fringe nodes in a PriorityQueue
@@ -230,7 +217,7 @@ def aStarSearch(problem, heuristic=nullHeuristic):
   while not fringe.isEmpty():
     #pop the first test state off the stack
     state = fringe.pop()
-    #assign values for the locationa and the path to that node
+    #assign values for the location, path, and cost
     myLocation = state[0]
     myPath = state[1]
     myCost = state[2]
