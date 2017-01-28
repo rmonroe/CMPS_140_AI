@@ -164,8 +164,8 @@ def uniformCostSearch(problem):
   print "Is the start a goal?", problem.isGoal(problem.startingState())
   print "Start's successors:", problem.successorStates(problem.startingState())
 
-  # same implementation as DFS but with a queue for FIFO
-  # hold the fringe nodes in a queue
+  # same implementation as DFS but with a priorityqueue to keep track of cost
+  # hold the fringe nodes in a PriorityQueue
   fringe = util.PriorityQueue()
   # keep track of the explored nodes, to use graph search
   explored = []
@@ -197,6 +197,7 @@ def uniformCostSearch(problem):
         # but only if they havent been explored yet
         if i[0] not in explored:
             temp = (i[0], myPath+[i[1]], myCost+[i[2]])
+            # when inserting get the cost of the actions to the new state
             fringe.push(temp, problem.actionsCost(myPath+[i[1]]))
 
   return []
@@ -214,8 +215,9 @@ def aStarSearch(problem, heuristic=nullHeuristic):
   print "Is the start a goal?", problem.isGoal(problem.startingState())
   print "Start's successors:", problem.successorStates(problem.startingState())
 
-  # same implementation as DFS but with a queue for FIFO
-  # hold the fringe nodes in a queue
+  # same implementation as UCS using a PriorityQueue, but additional
+  # cost is taken in
+  # hold the fringe nodes in a PriorityQueue
   fringe = util.PriorityQueue()
   # keep track of the explored nodes, to use graph search
   explored = []
@@ -247,6 +249,7 @@ def aStarSearch(problem, heuristic=nullHeuristic):
         # but only if they havent been explored yet
         if i[0] not in explored:
             temp = (i[0], myPath+[i[1]], myCost+[i[2]])
+            # here we use the cost to the new location + the cost of the heuristic
             fringe.push(temp, problem.actionsCost(myPath+[i[1]]) + heuristic(i[0], problem))
 
   return []
