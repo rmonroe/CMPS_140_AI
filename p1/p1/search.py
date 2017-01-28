@@ -170,7 +170,7 @@ def uniformCostSearch(problem):
   # keep track of the explored nodes, to use graph search
   explored = []
   # get the starting location and path
-  start = (problem.startingState(), [])
+  start = (problem.startingState(), [], [])
   # begin the stack with the start pos
   fringe.push(start, 0)
 
@@ -181,6 +181,7 @@ def uniformCostSearch(problem):
     #assign values for the locationa and the path to that node
     myLocation = state[0]
     myPath = state[1]
+    myCost = state[2]
 
     #check that the location has not already been explored
     if(myLocation not in explored):
@@ -195,8 +196,8 @@ def uniformCostSearch(problem):
       for i in successors:
         # but only if they havent been explored yet
         if i[0] not in explored:
-            temp = (i[0], myPath + [i[1]])
-            fringe.push(temp, [i[2]])
+            temp = (i[0], myPath+[i[1]], myCost+[i[2]])
+            fringe.push(temp, problem.actionsCost(myPath+[i[1]]))
 
   return []
 
@@ -209,7 +210,46 @@ def nullHeuristic(state, problem=None):
 
 def aStarSearch(problem, heuristic=nullHeuristic):
   "Search the node that has the lowest combined cost and heuristic first."
-  util.raiseNotDefined()
+  print "Start:", problem.startingState()
+  print "Is the start a goal?", problem.isGoal(problem.startingState())
+  print "Start's successors:", problem.successorStates(problem.startingState())
+
+  # same implementation as DFS but with a queue for FIFO
+  # hold the fringe nodes in a queue
+  fringe = util.PriorityQueue()
+  # keep track of the explored nodes, to use graph search
+  explored = []
+  # get the starting location,path, and cost
+  start = (problem.startingState(), [], [])
+  # begin the stack with the start pos
+  fringe.push(start, 0)
+
+  # loop until the fringe is empty
+  while not fringe.isEmpty():
+    #pop the first test state off the stack
+    state = fringe.pop()
+    #assign values for the locationa and the path to that node
+    myLocation = state[0]
+    myPath = state[1]
+    myCost = state[2]
+
+    #check that the location has not already been explored
+    if(myLocation not in explored):
+      # add the new location to explored
+      explored.append(myLocation)
+      # check if we have reached our goal
+      if(problem.isGoal(myLocation)):
+        return myPath
+      # find the successors to this state
+      successors = problem.successorStates(myLocation)
+      # loop through the successors and push them onto the stack
+      for i in successors:
+        # but only if they havent been explored yet
+        if i[0] not in explored:
+            temp = (i[0], myPath+[i[1]], myCost+[i[2]])
+            fringe.push(temp, problem.actionsCost(myPath+[i[1]]) + heuristic(i[0], problem))
+
+  return []
 
 
 
