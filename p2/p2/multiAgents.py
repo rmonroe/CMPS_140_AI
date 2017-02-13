@@ -106,7 +106,8 @@ class MinimaxAgent(MultiAgentSearchAgent):
   """
   # I HAVE NOT SUBMITTED THIS UNTIL NOW DUE TO COMPILING ERRORS ON MY LOCAL MACHINE.
   # I DID NOT HAVING A WORKING VERSION, TO TEST TILL NOW. I WILL BE TURNING THE ASSIGNMENT IN
-  # LATE. I AM NOT TRYING TO CRAM THIS IN BEFORE THE DEADLINE
+  # LATE. I AM NOT TRYING TO CRAM THIS IN BEFORE THE DEADLINE. NOTIFICATION OF LATE
+  # SUBMISSION
   def getAction(self, gameState):
     """
       Returns the minimax action from the current gameState using self.treeDepth
@@ -128,7 +129,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns the total number of agents in the game
     """
     "*** YOUR CODE HERE ***"
-    def max_val(state, depth, totalNumGhost):
+    def max_val(state, depth):
         # terminal states
         if depth == 0 or state.isWin() or state.isLose():
             return self.evaluationFunction(state)
@@ -145,11 +146,10 @@ class MinimaxAgent(MultiAgentSearchAgent):
             # send 1 to begin calculating the ghost moves, 1 is first ghost
             # send pacman successor states
             # subtract the depth by 1
-            # the nummghost is the total number of ghost
-            tempMax = max(tempMax, min_val(state.generateSuccessor(0,move), depth-1, 1, totalNumGhost))
+            tempMax = max(tempMax, min_val(state.generateSuccessor(0,move), depth-1, 1))
         return tempMax
 
-    def min_val(state, depth, ghost, totalNumGhost):
+    def min_val(state, depth, ghost):
         # terminal states
         if depth == 0 or state.isWin() or state.isLose():
             return self.evaluationFunction(state)
@@ -160,35 +160,29 @@ class MinimaxAgent(MultiAgentSearchAgent):
         legalActions = state.getLegalActions(ghost)
         # have we done move FOR ALL ghost
         # if the ghost we are checking equal the last ghost go back to pac man
-        if ghost == totalNumGhost:
-            for move in legalActions:
-                tempMin = min(tempMin, max_val(state.generateSuccessor(ghost,move), depth-1, totalNumGhost))
-        else:
-            for move in legalActions:
+        # had 2 loops simplified to 1 with check inside
+        for move in legalActions:
+            if ghost == (gameState.getNumAgents()-1):
+                tempMin = min(tempMin, max_val(state.generateSuccessor(ghost,move), depth-1))
+            else:
                 # add one for next ghost
-                tempMin = min(tempMin, min_val(state.generateSuccessor(ghost,move), depth-1, ghost +1, totalNumGhost))
+                # dont subtract, so all ghost go to same depth
+                tempMin = min(tempMin, min_val(state.generateSuccessor(ghost,move), depth, ghost +1))
 
         return tempMin
 
-    # this makes decision minimax-Decision
-    # get the legal moves for max
+    # this runs the actual search
     legalActions = []
     for action in gameState.getLegalActions(0):
         if action != Directions.STOP:
             legalActions.append(action)
-    # the number of ghost is 1 less than the total dont count pacman
-    totalNumGhost = gameState.getNumAgents() - 1
 
     utilities = []
     # loop through max's moves
     for move in legalActions:
-        # start with max(pacman) and get the successors
-        nextState = gameState.generateSuccessor(0, move)
-        # set the previous best
-        #lastBest = utility
-        # start with max
-        utilities.append((min_val(nextState, self.treeDepth, 1, totalNumGhost), move))
-
+        # start with min_val
+        utilities.append((min_val(gameState.generateSuccessor(0, move), self.treeDepth, 1), move))
+    # get the best move from all the utilities
     best = max(utilities)
     return best[1]
 
@@ -199,7 +193,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
     """
     "*** YOUR CODE HERE ***"
     # functionally same at minimax but with alpha betas
-    def max_val(state, depth, totalNumGhost, alpha, beta):
+    def max_val(state, depth, alpha, beta):
         # terminal states
         if depth == 0 or state.isWin() or state.isLose():
             return self.evaluationFunction(state)
@@ -216,15 +210,14 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             # send 1 to begin calculating the ghost moves, 1 is first ghost
             # send pacman successor states
             # subtract the depth by 1
-            # the nummghost is the total number of ghost
-            tempMax = max(tempMax, min_val(state.generateSuccessor(0,move), depth-1, 1, totalNumGhost, alpha, beta))
+            tempMax = max(tempMax, min_val(state.generateSuccessor(0,move), depth-1, 1, alpha, beta))
             # handle alpha beta, is beta less than max? set alpha to the max
             if tempMax >= beta:
                 return tempMax
             alpha = max(alpha, tempMax)
         return tempMax
 
-    def min_val(state, depth, ghost, totalNumGhost, alpha, beta):
+    def min_val(state, depth, ghost, alpha, beta):
         # terminal states
         if depth == 0 or state.isWin() or state.isLose():
             return self.evaluationFunction(state)
@@ -235,20 +228,19 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         legalActions = state.getLegalActions(ghost)
         # have we done move FOR ALL ghost
         # if the ghost we are checking equal the last ghost go back to pac man
-        if ghost == totalNumGhost:
-            for move in legalActions:
-                tempMin = min(tempMin, max_val(state.generateSuccessor(ghost,move), depth-1, totalNumGhost, alpha, beta))
+        for move in legalActions:
+            if ghost == (gameState.getNumAgents() - 1):
+                tempMin = min(tempMin, max_val(state.generateSuccessor(ghost,move), depth-1, alpha, beta))
                 # is min less than alpha, stop. set beta to min
                 if tempMin <= alpha:
                     return tempMin
                 beta = min(beta, tempMin)
-        else:
-            for move in legalActions:
+            else:
                 # add one for next ghost
-                tempMin = min(tempMin, min_val(state.generateSuccessor(ghost,move), depth-1, ghost +1, totalNumGhost, alpha, beta))
-                if tempMin <= alpha:
-                    return tempMin
-                beta = min(beta, tempMin)
+                # dont subtract, so all ghost go to same depth
+                # alpha, beta, and depth are the same, due to same level
+                tempMin = min(tempMin, min_val(state.generateSuccessor(ghost,move), depth, ghost +1, alpha, beta))
+                # apha beta remains same until go back to max
         return tempMin
 
     # this makes decision minimax-Decision
@@ -257,8 +249,6 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
     for action in gameState.getLegalActions(0):
         if action != Directions.STOP:
             legalActions.append(action)
-    # the number of ghost is 1 less than the total dont count pacman
-    totalNumGhost = gameState.getNumAgents() - 1
 
     utilities = []
     # arbitrary large alpha betas
@@ -267,12 +257,8 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
 
     # loop through max's moves
     for move in legalActions:
-        # start with max(pacman) and get the successors
-        nextState = gameState.generateSuccessor(0, move)
-        # set the previous best
-        #lastBest = utility
-        # start with max
-        utilities.append((min_val(nextState, self.treeDepth, 1, totalNumGhost, alpha, beta), move))
+        # start with min_val
+        utilities.append((min_val(gameState.generateSuccessor(0, move), self.treeDepth, 1, alpha, beta), move))
 
     best = max(utilities)
     return best[1]
@@ -290,6 +276,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
       legal moves.
     """
     "*** YOUR CODE HERE ***"
+    # same as minimax
     def max_val(state, depth):
         # terminal states
         if depth == 0 or state.isWin() or state.isLose():
@@ -304,46 +291,46 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
                 legalActions.append(action)
 
         for move in legalActions:
-            lastMax = tempMax
             # send 1 to begin calculating the ghost moves, 1 is first ghost
             # send pacman successor states
             # subtract the depth by 1
-            # the nummghost is the total number of ghost
-            tempMax = max(tempMax, exp_val(state.generateSuccessor(0,move), depth, 1))
+            tempMax = max(tempMax, exp_val(state.generateSuccessor(0,move), depth-1, 1))
         return tempMax
 
     def exp_val(state, depth, ghost):
+        # terminal states
         if depth == 0 or state.isWin() or state.isLose():
             return self.evaluationFunction(state)
-        legalActions = state.getLegalActions(ghost)
-        tempValue = 0
-        for move in legalActions:
-            if ghost == (gameState.getNumAgents()-1):
-                tempValue += max_val(gameState.generateSuccessor(ghost, move), depth-1)
-            else:
-                tempValue += exp_val(gameState.generateSuccessor(ghost, move), depth, ghost+1)
-        return tempValue / len(legalActions)
 
-    # this makes decision minimax-Decision
-    # get the legal moves for max
-    if gameState.isWin() or gameState.isLose():
-        return self.evaluationFunction(gameState)
+        # arbitrary exp_val
+        tempVal = 1000000
+        # get the ghosts legal moves
+        legalActions = state.getLegalActions(ghost)
+        # have we done move FOR ALL ghost
+        # if the ghost we are checking equal the last ghost go back to pac man
+        for move in legalActions:
+            if ghost == (gameState.getNumAgents() - 1):
+                tempVal = max_val(state.generateSuccessor(ghost,move), depth-1)
+            else:
+                # add one for next ghost
+                # dont subtract, so all ghost go to same depth
+                tempVal = exp_val(state.generateSuccessor(ghost,move), depth, ghost +1)
+        # uniform distribution so average the value against the total number of moves
+        return (tempVal/len(legalActions))
+
+    # this runs the actual search
     legalActions = []
     for action in gameState.getLegalActions(0):
         if action != Directions.STOP:
             legalActions.append(action)
-    # the number of ghost is 1 less than the total dont count pacman
     utilities = []
     # loop through max's moves
     for move in legalActions:
-        # start with max(pacman) and get the successors
-        # set the previous best
-        #lastBest = utility
-        # start with max
         utilities.append((exp_val(gameState.generateSuccessor(0, move), self.treeDepth, 1), move))
-
+    # get the best move from all the utilities
     best = max(utilities)
     return best[1]
+
 
 def betterEvaluationFunction(currentGameState):
   """
