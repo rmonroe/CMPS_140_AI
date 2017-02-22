@@ -119,7 +119,7 @@ class ValueIterationAgent(ValueEstimationAgent):
         # compute the Q values
         temp = self.getQValue(state, i)
         # has best been set yet? or is the new Q higher?
-        if best == None or temp > best:
+        if best == None or temp > bestQ:
             # set best to be the current action
             bestQ = temp
             best = i
