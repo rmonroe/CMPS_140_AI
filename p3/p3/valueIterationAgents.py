@@ -37,7 +37,13 @@ class ValueIterationAgent(ValueEstimationAgent):
     self.values = util.Counter() # A Counter is a dict with default 0
 
     """Description:
-    [Enter a description of what you did here.]
+    Loop through the iterations and make a temp dict. Then we loop through all
+    the possible states and track the best value for that state, but if we do
+    not have any possible actions we just add the value of the current state to
+    the dict at that state. If we continued the search though we loop through
+    the actions looking for the one with the highest qvalue and if we find one
+    we have a new best to beat and we add the qvalue of that state to the dict
+    of values
     """
     """ YOUR CODE HERE """
     # loop through the given number of iterations
@@ -63,13 +69,11 @@ class ValueIterationAgent(ValueEstimationAgent):
     """
       Return the value of the state (computed in __init__).
     """
-    return self.values[state]
-
     """Description:
-    [Enter a description of what you did here.]
+    Simple return the value at that state
     """
     """ YOUR CODE HERE """
-    util.raiseNotDefined()
+    return self.values[state]
     """ END CODE """
 
   def getQValue(self, state, action):

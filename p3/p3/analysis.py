@@ -98,10 +98,13 @@ def question6():
   answerEpsilon = None
   answerLearningRate = None
   """Description:
-  [Enter a description of what you did here.]
+  The agent will never find the optimal policy. I tried very high epsilons and
+  smaller decimal epsiolns, but the agent never made it farther then halfway.
+  The agent quickly discovers that the sides of the bridges are dangerous, but
+  returning to the start state is more beneficial.
   """
   """ YOUR CODE HERE """
-
+  return 'NOT POSSIBLE'
   """ END CODE """
   return answerEpsilon, answerLearningRate
   # If not possible, return 'NOT POSSIBLE'
