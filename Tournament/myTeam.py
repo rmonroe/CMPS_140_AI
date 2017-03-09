@@ -32,15 +32,26 @@ def createTeam(firstIndex, secondIndex, isRed,
   any extra arguments, so you should make sure that the default
   behavior is what you want for the nightly contest.
   """
-  first = 'SanteOffense'
-  second = 'SanteDefense'
+  first = 'SanteBottom'
+  second = 'SanteTop'
   # The following line is an example only; feel free to change it.
   return [eval(first)(firstIndex), eval(second)(secondIndex)]
 
 ##########
 # Agents #
 ##########
-class SanteOffense(ReflexCaptureAgent):
+
+##############
+# Blitzkrieg #
+##############
+"""
+The idea behind this team is to simply improve the reflex agent and overwhelm
+the opponent. This is done, but blitzing the opponent and sending both agents
+on offense. But rather than have both agents go for the same food the "bottom"
+agent is tasked with the first set of the food list and vis versa for the top.
+Double offense seems logical given the time/move limits
+"""
+class SanteBottom(ReflexCaptureAgent):
     """
     A reflex agent that seeks food. This is an agent
     we give you to get an idea of what an offensive agent might look like,
@@ -53,6 +64,8 @@ class SanteOffense(ReflexCaptureAgent):
 
       # Compute distance to the nearest food
       foodList = self.getFood(successor).asList()
+      half = len(foodList) / 2
+      foodList = foodList[:half]
       if len(foodList) > 0: # This should always be True,  but better safe than sorry
         myPos = successor.getAgentState(self.index).getPosition()
         minDistance = min([self.getMazeDistance(myPos, food) for food in foodList])
@@ -61,6 +74,31 @@ class SanteOffense(ReflexCaptureAgent):
 
     def getWeights(self, gameState, action):
       return {'successorScore': 100, 'distanceToFood': -1}
+class SanteTop(ReflexCaptureAgent):
+    """
+    A reflex agent that seeks food. This is an agent
+    we give you to get an idea of what an offensive agent might look like,
+    but it is by no means the best or only way to build an offensive agent.
+    """
+    def getFeatures(self, gameState, action):
+      features = util.Counter()
+      successor = self.getSuccessor(gameState, action)
+      features['successorScore'] = self.getScore(successor)
+
+      # Compute distance to the nearest food
+      foodList = self.getFood(successor).asList()
+      half = len(foodList) / 2
+      foodList = foodList[half:]
+      if len(foodList) > 0: # This should always be True,  but better safe than sorry
+        myPos = successor.getAgentState(self.index).getPosition()
+        minDistance = min([self.getMazeDistance(myPos, food) for food in foodList])
+        features['distanceToFood'] = minDistance
+      return features
+
+    def getWeights(self, gameState, action):
+      return {'successorScore': 100, 'distanceToFood': -1}
+
+
 class SanteDefense(ReflexCaptureAgent):
     """
     A reflex agent that keeps its side Pacman-free. Again,
