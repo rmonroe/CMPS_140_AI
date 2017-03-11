@@ -9,7 +9,7 @@
 from captureAgents import CaptureAgent
 import distanceCalculator
 import random, time, util
-from game import Directions
+from game import Directions, Actions
 import game
 from util import nearestPoint
 
@@ -33,8 +33,8 @@ def createTeam(firstIndex, secondIndex, isRed,
   any extra arguments, so you should make sure that the default
   behavior is what you want for the nightly contest.
   """
-  first = 'BlitzSmartBottom'
-  second = 'BlitzSmartTop'
+  first = 'BlitzSmartTop'
+  second = 'BlitzSmartBottom'
   # The following line is an example only; feel free to change it.
   return [eval(first)(firstIndex), eval(second)(secondIndex)]
 
@@ -98,9 +98,9 @@ class ReflexCaptureAgent(CaptureAgent):
     """
     return {'successorScore': 1.0}
 
-#################
-# Blitzkrieg 2.0#
-#################
+##################
+# Blitzkrieg 2.0 #
+##################
 class BlitzSmartBottom(ReflexCaptureAgent):
     """
     A reflex agent that seeks food. This is an agent
@@ -113,37 +113,57 @@ class BlitzSmartBottom(ReflexCaptureAgent):
     def getFeatures(self, gameState, action):
       features = util.Counter()
       successor = self.getSuccessor(gameState, action)
-      features['successorScore'] = self.getScore(successor)
+      myState = successor.getAgentState(self.index)
+
+      # The Food Blitz still in play
       foodList = self.getFood(successor).asList()
       half = len(foodList) / 2
       foodList = foodList[:half]
-      if len(foodList) > 0: # This should always be True,  but better safe than sorry
-        myPos = successor.getAgentState(self.index).getPosition()
-        minDistance = min([self.getMazeDistance(myPos, food) for food in foodList])
-        features['distanceToFood'] = minDistance
+      powerPellets = gameState.getCapsules()
+
+      # These all have to do with where I am and where I am going
+      myPos = successor.getAgentState(self.index).getPosition()
+      myX, myY = gameState.getAgentState(self.index).getPosition()
+      actionX, actionY = Actions.directionToVector(action)
+      nextX = int(myX + actionX)
+      nextY = int(myY + actionY)
 
       # Gets a list of the opponents that are currently a ghost
-      ghost= []
-      for i in self.getOpponents(gameState):
-          if not gameState.getAgentState(i).isPacman:
-              ghost.append(i)
+      enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
+      ghost = [a for a in enemies if not a.isPacman and a.getPosition() != None]
+      # invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
+      for j in ghost:
+          ghostPos = j.getPosition()
+          ghostMoves = Actions.getLegalNeighbors(ghostPos, gameState.getWalls())
+          if (nextX, nextY) == ghostPos:
+              if j.scaredTimer == 0:
+                  features['ScurdGhost'] = 0
+                  features['Runaway'] = 1
+              else:
+                  features['Ghostbusting'] += 1
+                  features['Feast'] += 2
+          elif ((nextX, nextY) in ghostMoves) and (j.scaredTimer > 0):
+              print("DONT CARE")
+              features['ScurdGhost'] += 1
+      for px, py in powerPellets:
+          if nextX == px and nextY == py and myState.isPacman:
+              features['ThePower'] = 1
 
-
-
+      features['successorScore'] = self.getScore(successor)
+      if len(foodList) > 0:
+          myPos = successor.getAgentState(self.index).getPosition()
+          minDistance = min([self.getMazeDistance(myPos, food) for food in foodList])
+          features['distanceToFood'] = minDistance # This should always be True,  but better safe than sorry
+      if action==Directions.STOP:
+          features['Stuck'] = 1.0
 
       return features
 
-      """
-      features['successorScore'] = self.getScore(successor)
-
-      # Compute distance to the nearest food
-
-      """
-
-
-
     def getWeights(self, gameState, action):
-      return {'successorScore': 100, 'distanceToFood': -1}
+      return {'successorScore': 80, 'distanceToFood': -1, 'ScurdGhost': 3, 'Runaway': -20, 'Ghostbusting': 1, 'Feast': 2, 'ThePower': 2, 'Stuck':-100}
+
+
+
 class BlitzSmartTop(ReflexCaptureAgent):
     """
     A reflex agent that seeks food. This is an agent
@@ -153,20 +173,55 @@ class BlitzSmartTop(ReflexCaptureAgent):
     def getFeatures(self, gameState, action):
       features = util.Counter()
       successor = self.getSuccessor(gameState, action)
-      features['successorScore'] = self.getScore(successor)
+      myState = successor.getAgentState(self.index)
 
-      # Compute distance to the nearest food
+      # The Food Blitz still in play
       foodList = self.getFood(successor).asList()
       half = len(foodList) / 2
       foodList = foodList[half:]
-      if len(foodList) > 0: # This should always be True,  but better safe than sorry
-        myPos = successor.getAgentState(self.index).getPosition()
-        minDistance = min([self.getMazeDistance(myPos, food) for food in foodList])
-        features['distanceToFood'] = minDistance
+      powerPellets = gameState.getCapsules()
+
+      # These all have to do with where I am and where I am going
+      myPos = successor.getAgentState(self.index).getPosition()
+      myX, myY = gameState.getAgentState(self.index).getPosition()
+      actionX, actionY = Actions.directionToVector(action)
+      nextX = int(myX + actionX)
+      nextY = int(myY + actionY)
+
+      # Gets a list of the opponents that are currently a ghost
+      enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
+      ghost = [a for a in enemies if not a.isPacman and a.getPosition() != None]
+      # invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
+      for j in ghost:
+          ghostPos = j.getPosition()
+          ghostMoves = Actions.getLegalNeighbors(ghostPos, gameState.getWalls())
+          if (nextX, nextY) == ghostPos:
+              if j.scaredTimer == 0:
+                  features['ScurdGhost'] = 0
+                  features['Runaway'] = 1
+              else:
+                  features['Ghostbusting'] += 2
+                  features['Feast'] += 1
+          elif ((nextX, nextY) in ghostMoves) and (j.scaredTimer > 0):
+              print("DONT CARE")
+              features['ScurdGhost'] += 1
+
+      for px, py in powerPellets:
+          if nextX == px and nextY == py and myState.isPacman:
+              features['ThePower'] = 1
+      features['successorScore'] = self.getScore(successor)
+      if len(foodList) > 0:
+          myPos = successor.getAgentState(self.index).getPosition()
+          minDistance = min([self.getMazeDistance(myPos, food) for food in foodList])
+          features['distanceToFood'] = minDistance# This should always be True,  but better safe than sorry
+      if action==Directions.STOP:
+          features["stuck"] = 1.0
+
       return features
 
     def getWeights(self, gameState, action):
-      return {'successorScore': 100, 'distanceToFood': -1}
+      return {'successorScore': 80, 'distanceToFood': -1, 'ScurdGhost': 3, 'Runaway': -20, 'Ghostbusting': 1, 'Feast': 2, 'ThePower': 2, 'Stuck':-100}
+
 
 
 class SanteDefense(ReflexCaptureAgent):
