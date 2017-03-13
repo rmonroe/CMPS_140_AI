@@ -33,8 +33,9 @@ def createTeam(firstIndex, secondIndex, isRed,
   any extra arguments, so you should make sure that the default
   behavior is what you want for the nightly contest.
   """
-  first = 'BlitzSmartTop'
-  second = 'BlitzSmartBottom'
+  first = 'FinalBlitzTop'
+  second = 'FinalBlitzBottom'
+
   # The following line is an example only; feel free to change it.
   return [eval(first)(firstIndex), eval(second)(secondIndex)]
 
@@ -97,6 +98,167 @@ class ReflexCaptureAgent(CaptureAgent):
     a counter or a dictionary.
     """
     return {'successorScore': 1.0}
+##################
+# Blitzkrieg 2.1 #
+##################
+class FinalBlitzBottom(ReflexCaptureAgent):
+    """
+    A reflex agent that seeks food. This is an agent
+    we give you to get an idea of what an offensive agent might look like,
+    but it is by no means the best or only way to build an offensive agent.
+    """
+    def __init__( self, index, timeForComputing = .1 ):
+        ReflexCaptureAgent.__init__( self, index, timeForComputing = .1 )
+
+    def getFeatures(self, gameState, action):
+      features = util.Counter()
+      successor = self.getSuccessor(gameState, action)
+      myState = successor.getAgentState(self.index)
+
+      # The Food Blitz still in play
+      foodList = self.getFood(successor).asList()
+      half = len(foodList) / 2
+      foodList = foodList[half:]
+      powerPellets = gameState.getCapsules()
+
+      # These all have to do with where I am and where I am going
+      myPos = successor.getAgentState(self.index).getPosition()
+      myX, myY = gameState.getAgentState(self.index).getPosition()
+      actionX, actionY = Actions.directionToVector(action)
+      nextX = int(myX + actionX)
+      nextY = int(myY + actionY)
+      myMoves = Actions.getLegalNeighbors((nextX,nextY), gameState.getWalls())
+
+      # Gets a list of the opponents that are currently a ghost
+      enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
+      ghost = [a for a in enemies if not a.isPacman and a.getPosition() != None]
+      invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
+      for j in ghost:
+          ghostPos = j.getPosition()
+          ghostMoves = Actions.getLegalNeighbors(ghostPos, gameState.getWalls())
+          if (nextX, nextY) == ghostPos:
+              if j.scaredTimer == 0 or (ghostPos in myMoves):
+                  features['ScurdGhost'] = 0
+                  features['Runaway'] = 1
+              else:
+                  features['Ghostbusting'] += 1
+                  features['Feast'] += 2
+          elif ((nextX, nextY) in ghostMoves) and (j.scaredTimer > 0):
+              features['ScurdGhost'] += 1
+      for px, py in powerPellets:
+          if nextX == px and nextY == py and myState.isPacman:
+              features['ThePower'] = 1
+
+
+      features['successorScore'] = self.getScore(successor)
+      if len(foodList) > 0:
+          myPos = successor.getAgentState(self.index).getPosition()
+          minDistance = min([self.getMazeDistance(myPos, food) for food in foodList])
+          features['distanceToFood'] = minDistance # This should always be True,  but better safe than sorry
+      if action==Directions.STOP:
+          features['Stuck'] = 1.0
+
+      if not myState.isPacman:
+          for j in invaders:
+              invPos = j.getPosition()
+              invMoves = Actions.getLegalNeighbors(invPos, gameState.getWalls())
+
+              if (nextX, nextY) == invPos:
+                  if myState.scaredTimer > 0:
+                      features['Runaway'] = 1
+                  else:
+                      features['Defense'] +=1
+              elif ((nextX, nextY) in invMoves) or (invPos in myMoves):
+                  features['Pursue'] += 1
+              else:
+                  features['Runaway'] = 1
+
+      return features
+
+    def getWeights(self, gameState, action):
+      return {'successorScore': 80, 'distanceToFood': -1, 'ScurdGhost': 3, 'Runaway': -20, 'Ghostbusting': 1, 'Feast': 2, 'ThePower': 2, 'Stuck':-100,
+      'Defense':  10, 'Pursue': 5}
+
+
+##################
+# Blitzkrieg 2.1 #
+##################
+class FinalBlitzTop(ReflexCaptureAgent):
+    """
+    A reflex agent that seeks food. This is an agent
+    we give you to get an idea of what an offensive agent might look like,
+    but it is by no means the best or only way to build an offensive agent.
+    """
+    def __init__( self, index, timeForComputing = .1 ):
+        ReflexCaptureAgent.__init__( self, index, timeForComputing = .1 )
+
+    def getFeatures(self, gameState, action):
+      features = util.Counter()
+      successor = self.getSuccessor(gameState, action)
+      myState = successor.getAgentState(self.index)
+
+      # The Food Blitz still in play
+      foodList = self.getFood(successor).asList()
+      half = len(foodList) / 2
+      foodList = foodList[:half]
+      powerPellets = gameState.getCapsules()
+
+      # These all have to do with where I am and where I am going
+      myPos = successor.getAgentState(self.index).getPosition()
+      myX, myY = gameState.getAgentState(self.index).getPosition()
+      actionX, actionY = Actions.directionToVector(action)
+      nextX = int(myX + actionX)
+      nextY = int(myY + actionY)
+      myMoves = Actions.getLegalNeighbors((nextX,nextY), gameState.getWalls())
+
+      # Gets a list of the opponents that are currently a ghost
+      enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
+      ghost = [a for a in enemies if not a.isPacman and a.getPosition() != None]
+      invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
+      for j in ghost:
+          ghostPos = j.getPosition()
+          ghostMoves = Actions.getLegalNeighbors(ghostPos, gameState.getWalls())
+          if (nextX, nextY) == ghostPos:
+              if j.scaredTimer == 0 or (ghostPos in myMoves):
+                  features['ScurdGhost'] = 0
+                  features['Runaway'] = 1
+              else:
+                  features['Ghostbusting'] += 1
+                  features['Feast'] += 2
+          elif ((nextX, nextY) in ghostMoves) and (j.scaredTimer > 0):
+              features['ScurdGhost'] += 1
+      for px, py in powerPellets:
+          if nextX == px and nextY == py and myState.isPacman:
+              features['ThePower'] = 1
+
+
+      features['successorScore'] = self.getScore(successor)
+      if len(foodList) > 0:
+          myPos = successor.getAgentState(self.index).getPosition()
+          minDistance = min([self.getMazeDistance(myPos, food) for food in foodList])
+          features['distanceToFood'] = minDistance # This should always be True,  but better safe than sorry
+      if action==Directions.STOP:
+          features['Stuck'] = 1.0
+
+      if not myState.isPacman:
+          for j in invaders:
+              invPos = j.getPosition()
+              invMoves = Actions.getLegalNeighbors(invPos, gameState.getWalls())
+              if (nextX, nextY) == invPos:
+                  features['Defense'] =1
+              elif ((nextX, nextY) in invMoves) and (myState.scaredTimer > 0):
+                  features['Runaway'] = 1
+              else:
+                  features['Pursue'] += 1
+
+      return features
+
+    def getWeights(self, gameState, action):
+      return {'successorScore': 80, 'distanceToFood': -1, 'ScurdGhost': 3, 'Runaway': -20, 'Ghostbusting': 1, 'Feast': 2, 'ThePower': 2, 'Stuck':-100,
+      'Defense':  2, 'Pursue': 1}
+
+
+
 
 ##################
 # Blitzkrieg 2.0 #
@@ -143,7 +305,6 @@ class BlitzSmartBottom(ReflexCaptureAgent):
                   features['Ghostbusting'] += 1
                   features['Feast'] += 2
           elif ((nextX, nextY) in ghostMoves) and (j.scaredTimer > 0):
-              print("DONT CARE")
               features['ScurdGhost'] += 1
       for px, py in powerPellets:
           if nextX == px and nextY == py and myState.isPacman:
