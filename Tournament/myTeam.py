@@ -18,7 +18,7 @@ from util import nearestPoint
 #################
 
 def createTeam(firstIndex, secondIndex, isRed,
-               first = 'DummyAgent', second = 'DummyAgent'):
+               first = 'FinalBlitzTop', second = 'FinalBlitzBottom'):
   """
   This function should return a list of two agents that will form the
   team, initialized using firstIndex and secondIndex as their agent
@@ -33,6 +33,19 @@ def createTeam(firstIndex, secondIndex, isRed,
   any extra arguments, so you should make sure that the default
   behavior is what you want for the nightly contest.
   """
+  """
+    These are my two agents FinalBlitzTop and FinalBlitzBottom. They are
+    modified reflex agents with a very unique strategy. When thinking of a way
+    to outsmart my opponent I came up with a drastic stragtegy inspired by
+    Blitzkrieg or "Lightning warfare". Rather than dedicate one against to pure
+    defense both of my agents think defensively on their way to the food, but
+    after they become a pacman they have 1 goal consume as much food as possible.
+    What makes the two agents work so well together, and the reason for the top
+    bottom naming convention, is the fact that I only send each agent half of the
+    foodlist. Using this method my agents do not waste moves trying to consume the
+    same food as the other agent.
+  """
+
   first = 'FinalBlitzTop'
   second = 'FinalBlitzBottom'
 
@@ -42,7 +55,10 @@ def createTeam(firstIndex, secondIndex, isRed,
 ##########
 # Agents #
 ##########
-
+"""
+ Used the reflex agent from the example, but expanded on how it makes its
+ decisions.
+"""
 class ReflexCaptureAgent(CaptureAgent):
   """
   A base class for reflex agents that chooses score-maximizing actions
@@ -103,19 +119,19 @@ class ReflexCaptureAgent(CaptureAgent):
 ##################
 class FinalBlitzBottom(ReflexCaptureAgent):
     """
-    A reflex agent that seeks food. This is an agent
-    we give you to get an idea of what an offensive agent might look like,
-    but it is by no means the best or only way to build an offensive agent.
+        This is my agent tasked with the bottom of the foodlist, he goes for the
+        bottom half of the foodlist. The strategy is mirrored in the other agent
     """
     def __init__( self, index, timeForComputing = .1 ):
         ReflexCaptureAgent.__init__( self, index, timeForComputing = .1 )
 
     def getFeatures(self, gameState, action):
+      # perform all necessary calculations first
       features = util.Counter()
       successor = self.getSuccessor(gameState, action)
       myState = successor.getAgentState(self.index)
 
-      # The Food Blitz still in play
+      # The Food Blitz, dividing the list in half
       foodList = self.getFood(successor).asList()
       half = len(foodList) / 2
       foodList = foodList[half:]
@@ -129,45 +145,64 @@ class FinalBlitzBottom(ReflexCaptureAgent):
       nextY = int(myY + actionY)
       myMoves = Actions.getLegalNeighbors((nextX,nextY), gameState.getWalls())
 
-      # Gets a list of the opponents that are currently a ghost
+      # Gets a list of the opponents that are currently a ghost and those that
+      # invading pacmen
       enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
       ghost = [a for a in enemies if not a.isPacman and a.getPosition() != None]
       invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
+
+      # this is this values for avoiding a ghost
       for j in ghost:
+          # first get the ghost position and where he could go
           ghostPos = j.getPosition()
           ghostMoves = Actions.getLegalNeighbors(ghostPos, gameState.getWalls())
+          # if I am about to hit the ghost we want to see if he is scared or not
           if (nextX, nextY) == ghostPos:
+              # if the ghost is not scared we will trigger the Runaway feature
               if j.scaredTimer == 0 or (ghostPos in myMoves):
                   features['ScurdGhost'] = 0
                   features['Runaway'] = 1
+              # if we made it here, he is scared and it doesn't matter, so lets
+              # eat him and the food he is on
               else:
                   features['Ghostbusting'] += 1
                   features['Feast'] += 2
+          # if I am in the ghost moves and he is scared I could go eat him
           elif ((nextX, nextY) in ghostMoves) and (j.scaredTimer > 0):
               features['ScurdGhost'] += 1
+      # we grab powerPellets simple because they make us invicible and can eat
+      # with no worry of dying
       for px, py in powerPellets:
           if nextX == px and nextY == py and myState.isPacman:
               features['ThePower'] = 1
 
-
+      # this is from the reflex agent before check the score and calc the food
       features['successorScore'] = self.getScore(successor)
       if len(foodList) > 0:
           myPos = successor.getAgentState(self.index).getPosition()
           minDistance = min([self.getMazeDistance(myPos, food) for food in foodList])
           features['distanceToFood'] = minDistance # This should always be True,  but better safe than sorry
+      # quick check if I am stuck
       if action==Directions.STOP:
           features['Stuck'] = 1.0
 
+      # Here is my defensive strategy only complete this check if I am a ghost
       if not myState.isPacman:
           for j in invaders:
+              # calc the moves of the invader like the ghost
               invPos = j.getPosition()
               invMoves = Actions.getLegalNeighbors(invPos, gameState.getWalls())
-
+              # here is where I do the defensive move
               if (nextX, nextY) == invPos:
+                  # if I am about to hit him and am scared we don't want to go
+                  # there so we retreat
                   if myState.scaredTimer > 0:
                       features['Runaway'] = 1
+                  # otherwise we want to play defensivly and eat the pacman
                   else:
                       features['Defense'] +=1
+              # this is a pursue check where I only want to follow if either he
+              # is in my moves or I am in his moves
               elif ((nextX, nextY) in invMoves) or (invPos in myMoves):
                   features['Pursue'] += 1
               else:
@@ -175,6 +210,7 @@ class FinalBlitzBottom(ReflexCaptureAgent):
 
       return features
 
+    # We then have to send the new weights as well
     def getWeights(self, gameState, action):
       return {'successorScore': 80, 'distanceToFood': -1, 'ScurdGhost': 3, 'Runaway': -20, 'Ghostbusting': 1, 'Feast': 2, 'ThePower': 2, 'Stuck':-100,
       'Defense':  10, 'Pursue': 5}
@@ -185,9 +221,8 @@ class FinalBlitzBottom(ReflexCaptureAgent):
 ##################
 class FinalBlitzTop(ReflexCaptureAgent):
     """
-    A reflex agent that seeks food. This is an agent
-    we give you to get an idea of what an offensive agent might look like,
-    but it is by no means the best or only way to build an offensive agent.
+        This is the mirror image of the FinalBlitzBottom agent, but he handles
+        the top of the foodList, other than that they are identical in strategy.
     """
     def __init__( self, index, timeForComputing = .1 ):
         ReflexCaptureAgent.__init__( self, index, timeForComputing = .1 )
@@ -200,6 +235,7 @@ class FinalBlitzTop(ReflexCaptureAgent):
       # The Food Blitz still in play
       foodList = self.getFood(successor).asList()
       half = len(foodList) / 2
+      # here is where he get the other half of the food
       foodList = foodList[:half]
       powerPellets = gameState.getCapsules()
 
@@ -211,10 +247,12 @@ class FinalBlitzTop(ReflexCaptureAgent):
       nextY = int(myY + actionY)
       myMoves = Actions.getLegalNeighbors((nextX,nextY), gameState.getWalls())
 
-      # Gets a list of the opponents that are currently a ghost
+      # Gets a list of the opponents that are currently a ghost or pacman
       enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
       ghost = [a for a in enemies if not a.isPacman and a.getPosition() != None]
       invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
+
+      # how to handle ghost
       for j in ghost:
           ghostPos = j.getPosition()
           ghostMoves = Actions.getLegalNeighbors(ghostPos, gameState.getWalls())
@@ -231,15 +269,16 @@ class FinalBlitzTop(ReflexCaptureAgent):
           if nextX == px and nextY == py and myState.isPacman:
               features['ThePower'] = 1
 
-
+      # same as base reflex agent
       features['successorScore'] = self.getScore(successor)
       if len(foodList) > 0:
           myPos = successor.getAgentState(self.index).getPosition()
           minDistance = min([self.getMazeDistance(myPos, food) for food in foodList])
           features['distanceToFood'] = minDistance # This should always be True,  but better safe than sorry
+      # check that I am not stuck
       if action==Directions.STOP:
           features['Stuck'] = 1.0
-
+      # How to play defense
       if not myState.isPacman:
           for j in invaders:
               invPos = j.getPosition()
@@ -385,44 +424,6 @@ class BlitzSmartTop(ReflexCaptureAgent):
 
 
 
-class SanteDefense(ReflexCaptureAgent):
-    """
-    A reflex agent that keeps its side Pacman-free. Again,
-    this is to give you an idea of what a defensive agent
-    could be like.  It is not the best or only way to make
-    such an agent.
-    """
-
-    def getFeatures(self, gameState, action):
-      features = util.Counter()
-      successor = self.getSuccessor(gameState, action)
-
-      myState = successor.getAgentState(self.index)
-      myPos = myState.getPosition()
-
-      # Computes whether we're on defense (1) or offense (0)
-      features['onDefense'] = 1
-      if myState.isPacman: features['onDefense'] = 0
-
-      # Computes distance to invaders we can see
-      enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
-      invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
-      features['numInvaders'] = len(invaders)
-      if len(invaders) > 0:
-        dists = [self.getMazeDistance(myPos, a.getPosition()) for a in invaders]
-        features['invaderDistance'] = min(dists)
-
-      if action == Directions.STOP: features['stop'] = 1
-      rev = Directions.REVERSE[gameState.getAgentState(self.index).configuration.direction]
-      if action == rev: features['reverse'] = 1
-
-      return features
-
-    def getWeights(self, gameState, action):
-      return {'numInvaders': -1000, 'onDefense': 100, 'invaderDistance': -10, 'stop': -100, 'reverse': -2}
-
-
-
 ##############
 # Blitzkrieg #
 ##############
@@ -483,41 +484,7 @@ class BlitzTop(ReflexCaptureAgent):
       return {'successorScore': 100, 'distanceToFood': -1}
 
 
-class SanteDefense(ReflexCaptureAgent):
-    """
-    A reflex agent that keeps its side Pacman-free. Again,
-    this is to give you an idea of what a defensive agent
-    could be like.  It is not the best or only way to make
-    such an agent.
-    """
 
-    def getFeatures(self, gameState, action):
-      features = util.Counter()
-      successor = self.getSuccessor(gameState, action)
-
-      myState = successor.getAgentState(self.index)
-      myPos = myState.getPosition()
-
-      # Computes whether we're on defense (1) or offense (0)
-      features['onDefense'] = 1
-      if myState.isPacman: features['onDefense'] = 0
-
-      # Computes distance to invaders we can see
-      enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
-      invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
-      features['numInvaders'] = len(invaders)
-      if len(invaders) > 0:
-        dists = [self.getMazeDistance(myPos, a.getPosition()) for a in invaders]
-        features['invaderDistance'] = min(dists)
-
-      if action == Directions.STOP: features['stop'] = 1
-      rev = Directions.REVERSE[gameState.getAgentState(self.index).configuration.direction]
-      if action == rev: features['reverse'] = 1
-
-      return features
-
-    def getWeights(self, gameState, action):
-      return {'numInvaders': -1000, 'onDefense': 100, 'invaderDistance': -10, 'stop': -100, 'reverse': -2}
 
 
 
